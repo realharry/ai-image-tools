@@ -3,6 +3,9 @@ import type { ImageInfo } from '@/types';
 // Log when content script loads
 console.log('AI Image Tools content script loaded on:', window.location.href);
 
+// Track if the script has been initialized
+let isInitialized = false;
+
 // Function to find all images on the page
 function findImages(): ImageInfo[] {
   console.log('Finding images on page...');
@@ -50,6 +53,11 @@ function findImages(): ImageInfo[] {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Content script received message:', request, 'from:', sender);
   
+  if (request.action === 'ping') {
+    sendResponse({ status: 'ready' });
+    return true;
+  }
+  
   if (request.action === 'findImages') {
     try {
       const images = findImages();
@@ -65,9 +73,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// Function to signal readiness to background script
+function signalReady() {
+  if (!isInitialized) {
+    isInitialized = true;
+    chrome.runtime.sendMessage({ action: 'contentScriptReady', url: window.location.href })
+      .then(() => console.log('Signaled readiness to background script'))
+      .catch(error => console.log('Failed to send ready signal:', error));
+  }
+}
+
 // Initialize when DOM is ready
 function initialize() {
   console.log('Content script initializing...');
+  signalReady();
   
   // Wait for all images to load, then send initial data
   let loadedImages = 0;
@@ -86,7 +105,8 @@ function initialize() {
       setTimeout(() => {
         console.log('All images loaded, sending initial data...');
         const images = findImages();
-        chrome.runtime.sendMessage({ action: 'imagesFound', images });
+        chrome.runtime.sendMessage({ action: 'imagesFound', images })
+          .catch(error => console.log('Failed to send initial images:', error));
       }, 100);
     }
   };
@@ -112,3 +132,8 @@ if (document.readyState === 'loading') {
 window.addEventListener('load', () => {
   setTimeout(initialize, 1000);
 });
+
+// Signal ready immediately if already loaded
+if (document.readyState === 'complete') {
+  setTimeout(signalReady, 100);
+}

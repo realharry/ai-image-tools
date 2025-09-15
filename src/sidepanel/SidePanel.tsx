@@ -17,49 +17,36 @@ export function SidePanel() {
     setError('');
     
     try {
-      // Get current tab
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      // Use background script to mediate communication
+      const response = await chrome.runtime.sendMessage({ action: 'getImages' });
       
-      if (!tab?.id) {
-        throw new Error('No active tab found');
-      }
-
-      // Try to send message with retries
-      let retries = 3;
-      let lastError;
-      
-      while (retries > 0) {
-        try {
-          const response = await chrome.tabs.sendMessage(tab.id, { action: 'findImages' });
-          
-          if (response && response.images) {
-            setImages(response.images);
-            // Clear selection if the previously selected image is no longer available
-            if (selectedImage && !response.images.find((img: ImageInfo) => img.src === selectedImage.src)) {
-              setSelectedImage(null);
-            }
-            return; // Success!
-          } else {
-            setImages([]);
-            return;
-          }
-        } catch (messageError) {
-          lastError = messageError;
-          retries--;
-          
-          if (retries > 0) {
-            // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
+      if (response && response.images) {
+        setImages(response.images);
+        // Clear selection if the previously selected image is no longer available
+        if (selectedImage && !response.images.find((img: ImageInfo) => img.src === selectedImage.src)) {
+          setSelectedImage(null);
         }
+      } else if (response && response.error) {
+        throw new Error(response.error);
+      } else {
+        setImages([]);
       }
-      
-      // All retries failed
-      throw lastError;
       
     } catch (error) {
       console.error('Error loading images:', error);
-      setError('Unable to scan for images. Please refresh the webpage and try again.');
+      
+      let errorMessage = 'Unable to scan for images. ';
+      if (error instanceof Error) {
+        if (error.message.includes('Could not establish connection')) {
+          errorMessage += 'The page content script is not responding. Please refresh the webpage and try again.';
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += 'Please refresh the webpage and try again.';
+      }
+      
+      setError(errorMessage);
       setImages([]);
     } finally {
       setLoading(false);
