@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug AI Image Tools Extension</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .debug-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .test-images img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        .debug-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>AI Image Tools Extension Debugger</h1>
+    
+    <div class="debug-section">
+        <h3>Extension Status</h3>
+        <button onclick="checkExtension()">Check Extension</button>
+        <button onclick="testContentScript()">Test Content Script</button>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="debug-output" class="debug-output"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>Test Instructions</h3>
+        <ol>
+            <li>Make sure the AI Image Tools extension is loaded in Chrome Developer Mode</li>
+            <li>Click "Check Extension" to verify it's working</li>
+            <li>Click "Test Content Script" to see what images are detected</li>
+            <li>Open the extension side panel to test the full functionality</li>
+            <li>Check browser console for detailed logs</li>
+        </ol>
+    </div>
+
+    <h2>Test Images</h2>
+    <div class="test-images">
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%23e74c3c'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 1%3C/text%3E%3C/svg%3E" alt="Red Test Image">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%233498db'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 2%3C/text%3E%3C/svg%3E" alt="Blue Test Image">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%232ecc71'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 3%3C/text%3E%3C/svg%3E" alt="Green Test Image">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%23f39c12'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 4%3C/text%3E%3C/svg%3E" alt="Orange Test Image">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%239b59b6'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 5%3C/text%3E%3C/svg%3E" alt="Purple Test Image">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%2334495e'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 6%3C/text%3E%3C/svg%3E" alt="Dark Test Image">
+    </div>
+
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+            logCount++;
+            
+            // Also log to console
+            console.log(`[Extension Debug] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('debug-output').innerHTML = '';
+            logCount = 0;
+        }
+
+        async function checkExtension() {
+            log('Checking extension status...');
+            
+            try {
+                // Check if chrome.runtime is available
+                if (typeof chrome === 'undefined' || !chrome.runtime) {
+                    log('❌ Chrome extension APIs not available. Extension may not be loaded.', 'error');
+                    return;
+                }
+                
+                log('✅ Chrome extension APIs available', 'success');
+                
+                // Try to get extension info
+                const manifest = chrome.runtime.getManifest();
+                log(`📋 Extension: ${manifest.name} v${manifest.version}`, 'success');
+                
+                // Test messaging
+                try {
+                    const response = await chrome.runtime.sendMessage({ action: 'ping' });
+                    log('✅ Background script responding', 'success');
+                } catch (error) {
+                    log(`⚠️ Background script not responding: ${error.message}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Extension check failed: ${error.message}`, 'error');
+            }
+        }
+
+        function testContentScript() {
+            log('Testing content script image detection...');
+            
+            const images = document.querySelectorAll('img');
+            log(`🔍 Found ${images.length} img elements on page`);
+            
+            let processedCount = 0;
+            let validImages = 0;
+            
+            images.forEach((img, index) => {
+                const info = {
+                    index: index + 1,
+                    src: img.src.substring(0, 50) + (img.src.length > 50 ? '...' : ''),
+                    alt: img.alt || 'No alt text',
+                    naturalWidth: img.naturalWidth,
+                    naturalHeight: img.naturalHeight,
+                    clientWidth: img.clientWidth,
+                    clientHeight: img.clientHeight,
+                    complete: img.complete
+                };
+                
+                log(`📷 Image ${info.index}: ${info.alt} (${info.naturalWidth}x${info.naturalHeight}) - ${info.complete ? 'Loaded' : 'Loading'}`);
+                
+                processedCount++;
+                if (info.naturalWidth >= 50 && info.naturalHeight >= 50) {
+                    validImages++;
+                }
+            });
+            
+            log(`✅ Processed ${processedCount} images, ${validImages} meet size requirements`, validImages > 0 ? 'success' : 'warning');
+            
+            // Test the actual content script if available
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                log('🧪 Testing extension image detection...');
+                chrome.runtime.sendMessage({ action: 'getImages' })
+                    .then(response => {
+                        if (response && response.images) {
+                            log(`✅ Extension detected ${response.images.length} images`, 'success');
+                            response.images.forEach((img, i) => {
+                                log(`   ${i+1}. ${img.alt} (${img.naturalWidth}x${img.naturalHeight})`);
+                            });
+                        } else if (response && response.error) {
+                            log(`❌ Extension error: ${response.error}`, 'error');
+                        } else {
+                            log('⚠️ No response from extension', 'warning');
+                        }
+                    })
+                    .catch(error => {
+                        log(`❌ Extension test failed: ${error.message}`, 'error');
+                    });
+            }
+        }
+
+        // Auto-run basic checks when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('🚀 Extension debugger loaded');
+                checkExtension();
+                setTimeout(testContentScript, 1000);
+            }, 500);
+        });
+
+        // Listen for extension messages
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+                log(`📨 Received message: ${JSON.stringify(request)}`);
+                return false;
+            });
+        }
+    </script>
+</body>
+</html>
