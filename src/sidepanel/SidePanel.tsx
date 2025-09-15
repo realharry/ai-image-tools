@@ -10,27 +10,56 @@ export function SidePanel() {
   const [images, setImages] = useState<ImageInfo[]>([]);
   const [selectedImage, setSelectedImage] = useState<ImageInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   const loadImages = async () => {
     setLoading(true);
+    setError('');
+    
     try {
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      if (tab.id) {
-        // Send message to content script to find images
-        const response = await chrome.tabs.sendMessage(tab.id, { action: 'findImages' });
-        
-        if (response && response.images) {
-          setImages(response.images);
-          // Clear selection if the previously selected image is no longer available
-          if (selectedImage && !response.images.find((img: ImageInfo) => img.src === selectedImage.src)) {
-            setSelectedImage(null);
+      if (!tab?.id) {
+        throw new Error('No active tab found');
+      }
+
+      // Try to send message with retries
+      let retries = 3;
+      let lastError;
+      
+      while (retries > 0) {
+        try {
+          const response = await chrome.tabs.sendMessage(tab.id, { action: 'findImages' });
+          
+          if (response && response.images) {
+            setImages(response.images);
+            // Clear selection if the previously selected image is no longer available
+            if (selectedImage && !response.images.find((img: ImageInfo) => img.src === selectedImage.src)) {
+              setSelectedImage(null);
+            }
+            return; // Success!
+          } else {
+            setImages([]);
+            return;
+          }
+        } catch (messageError) {
+          lastError = messageError;
+          retries--;
+          
+          if (retries > 0) {
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
       }
+      
+      // All retries failed
+      throw lastError;
+      
     } catch (error) {
       console.error('Error loading images:', error);
+      setError('Unable to scan for images. Please refresh the webpage and try again.');
       setImages([]);
     } finally {
       setLoading(false);
@@ -69,6 +98,14 @@ export function SidePanel() {
           </Button>
         </CardContent>
       </Card>
+
+      {error && (
+        <Card className="border-destructive">
+          <CardContent className="pt-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       <ImageList
         images={images}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test Page for AI Image Tools</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-images img {
+            width: 200px;
+            height: 150px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        .instructions {
+            background: #f0f8ff;
+            border: 1px solid #b0d4f1;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Test Page for AI Image Tools</h1>
+    
+    <div class="instructions">
+        <h3>Test Instructions:</h3>
+        <ol>
+            <li>This page has several test images below</li>
+            <li>Open the AI Image Tools extension</li>
+            <li>Click "Open Side Panel" to scan for images</li>
+            <li>The extension should detect all visible images</li>
+        </ol>
+    </div>
+
+    <h2>Test Images</h2>
+    <div class="test-images">
+        <!-- Create simple colored rectangles as test images -->
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%23ff6b6b'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 1%3C/text%3E%3C/svg%3E" alt="Test Image 1">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%234ecdc4'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 2%3C/text%3E%3C/svg%3E" alt="Test Image 2">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%2345b7d1'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='white'%3ETest Image 3%3C/text%3E%3C/svg%3E" alt="Test Image 3">
+        
+        <img src="data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='150' fill='%23f9ca24'/%3E%3Ctext x='100' y='75' text-anchor='middle' font-family='Arial' font-size='16' fill='black'%3ETest Image 4%3C/text%3E%3C/svg%3E" alt="Test Image 4">
+    </div>
+
+    <div style="margin-top: 30px;">
+        <h3>Debug Information</h3>
+        <p>Open browser console to see extension logs</p>
+        <button onclick="testContentScript()">Test Content Script</button>
+    </div>
+
+    <script>
+        function testContentScript() {
+            console.log('Testing content script...');
+            const images = document.querySelectorAll('img');
+            console.log('Found images:', images.length);
+            images.forEach((img, i) => {
+                console.log(`Image ${i+1}:`, {
+                    src: img.src,
+                    alt: img.alt,
+                    naturalWidth: img.naturalWidth,
+                    naturalHeight: img.naturalHeight,
+                    clientWidth: img.clientWidth,
+                    clientHeight: img.clientHeight
+                });
+            });
+        }
+
+        // Test images when they load
+        window.addEventListener('load', () => {
+            setTimeout(testContentScript, 1000);
+        });
+    </script>
+</body>
+</html>
